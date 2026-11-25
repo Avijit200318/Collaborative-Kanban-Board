@@ -74,7 +74,7 @@ cd Collaborative-Kanban-Board
 ```
 
 2. **Add all the `.env` variables**
-- Create a `.env` file in the root directory using `.env.example` as a template and fill in your values:
+- Create a `.env` file in the root directory using `.env.example.txt` as a template and fill in your values:
 
 ```env
 PORT=4000
