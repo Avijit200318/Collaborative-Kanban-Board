@@ -20,6 +20,7 @@ This Collaborative Kanban Board is a full-stack project management application b
 - **Drag and Drop:** Move tasks smoothly between columns or reorder them within the same column using `@dnd-kit` with a solid `DragOverlay` card preview, persisting updated `status` and `position` values to MongoDB.
 - **Search and Filters:** Search tasks by title and filter simultaneously by priority (`low`, `medium`, `high`) and assignee.
 - **Task Details Drawer:** Click any task card to open a slide-over detail drawer to view and edit its title, description, priority, assignee, and status.
+- **Optimistic Updates & Rollback:** Creating, editing, deleting, and dragging tasks update the UI immediately; if the backend request fails, Redux restores the pre-mutation snapshot and shows an error banner (with a **Simulate Error** toggle in the navbar for testing).
 - **Layered Backend Architecture:** Follows a clean `Route → Middleware → Controller → Service → Model` structure with `express-validator` request validation and centralized error handling.
 
 ## Project Status
@@ -28,7 +29,7 @@ This Collaborative Kanban Board is a full-stack project management application b
 - [x] **2. Drag and drop** — Move tasks between columns, reorder within a column, and persist `status` and `position`
 - [x] **3. Search and filters** — Search by title and combine priority + assignee filters together
 - [x] **4. Task details** — Click any task card to open a detail drawer to view and edit description, priority, assignee, and status
-- [ ] **5. Optimistic updates** — Upcoming
+- [x] **5. Optimistic updates** — Instant UI updates with snapshot rollback and error banner on API failures
 - [ ] **6. Real-time collaboration** — Upcoming
 - [ ] **7. URL state** — Upcoming
 

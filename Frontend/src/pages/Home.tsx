@@ -26,6 +26,7 @@ import {
   deleteTask,
   fetchBoard,
   moveTask,
+  toggleSimulateError,
   updateTask,
 } from "../redux/board/boardSlice";
 import { COLUMN_ORDER, ColumnStatus, Task, TaskPayload } from "../types/task";
@@ -64,7 +65,7 @@ const flattenGroups = (groups: Record<ColumnStatus, Task[]>): Task[] => {
 
 export default function Home() {
   const dispatch = useDispatch<AppDispatch>();
-  const { tasks, loading, saving, error } = useSelector(
+  const { tasks, loading, saving, error, simulateError } = useSelector(
     (state: RootState) => state.board
   );
 
@@ -147,18 +148,12 @@ export default function Home() {
   };
 
   const handleFormSubmit = async (payload: TaskPayload) => {
+    setIsModalOpen(false);
     if (editingTask) {
-      const result = await dispatch(
-        updateTask({ id: editingTask.id, updates: payload })
-      );
-      if (updateTask.fulfilled.match(result)) {
-        setIsModalOpen(false);
-      }
+      if (editingTask.id.startsWith("temp-")) return;
+      dispatch(updateTask({ id: editingTask.id, updates: payload }));
     } else {
-      const result = await dispatch(createTask(payload));
-      if (createTask.fulfilled.match(result)) {
-        setIsModalOpen(false);
-      }
+      dispatch(createTask(payload));
     }
   };
 
@@ -166,17 +161,17 @@ export default function Home() {
     id: string,
     updates: Partial<TaskPayload>
   ) => {
-    const result = await dispatch(updateTask({ id, updates }));
-    if (updateTask.fulfilled.match(result)) {
-      setSelectedTaskId(null);
-    }
+    setSelectedTaskId(null);
+    if (id.startsWith("temp-")) return;
+    dispatch(updateTask({ id, updates }));
   };
 
   const handleDeleteTask = async (id: string) => {
-    const result = await dispatch(deleteTask(id));
-    if (deleteTask.fulfilled.match(result) && selectedTaskId === id) {
+    if (selectedTaskId === id) {
       setSelectedTaskId(null);
     }
+    if (id.startsWith("temp-")) return;
+    dispatch(deleteTask(id));
   };
 
   const handleClearFilters = () => {
@@ -258,15 +253,15 @@ export default function Home() {
     setDraftTasks(flattenGroups(currentGroups));
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     const activeId = String(active.id);
     const finalSnapshot = draftTasks ?? tasks;
 
     setActiveTask(null);
+    setDraftTasks(null);
 
-    if (!over) {
-      setDraftTasks(null);
+    if (!over || activeId.startsWith("temp-")) {
       return;
     }
 
@@ -274,7 +269,6 @@ export default function Home() {
     const updatedTask = finalSnapshot.find((t) => t.id === activeId);
 
     if (!originalTask || !updatedTask) {
-      setDraftTasks(null);
       return;
     }
 
@@ -282,21 +276,16 @@ export default function Home() {
       originalTask.status === updatedTask.status &&
       originalTask.position === updatedTask.position
     ) {
-      setDraftTasks(null);
       return;
     }
 
-    try {
-      await dispatch(
-        moveTask({
-          id: updatedTask.id,
-          status: updatedTask.status as ColumnStatus,
-          position: updatedTask.position,
-        })
-      );
-    } finally {
-      setDraftTasks(null);
-    }
+    dispatch(
+      moveTask({
+        id: updatedTask.id,
+        status: updatedTask.status as ColumnStatus,
+        position: updatedTask.position,
+      })
+    );
   };
 
   const handleDragCancel = () => {
@@ -309,6 +298,8 @@ export default function Home() {
       <Navbar
         totalTasks={tasks.length}
         loading={loading}
+        simulateError={simulateError}
+        onToggleSimulateError={() => dispatch(toggleSimulateError())}
         onRefresh={() => dispatch(fetchBoard())}
         onCreateClick={() => openCreateModal("Backlog")}
       />
