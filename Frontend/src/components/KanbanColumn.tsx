@@ -10,7 +10,9 @@ import TaskCard from "./TaskCard";
 type KanbanColumnProps = {
   status: ColumnStatus;
   tasks: Task[];
+  isFiltered: boolean;
   onAddTask: (status: ColumnStatus) => void;
+  onSelectTask: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
 };
@@ -25,7 +27,9 @@ const COLUMN_ACCENTS: Record<ColumnStatus, string> = {
 export default function KanbanColumn({
   status,
   tasks,
+  isFiltered,
   onAddTask,
+  onSelectTask,
   onEditTask,
   onDeleteTask,
 }: KanbanColumnProps) {
@@ -75,13 +79,16 @@ export default function KanbanColumn({
                   : "border-slate-200 text-slate-400"
               }`}
             >
-              Drop a task here or click + to add one
+              {isFiltered
+                ? "No matching tasks in this column"
+                : "Drop a task here or click + to add one"}
             </div>
           ) : (
             tasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
+                onSelect={onSelectTask}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
               />

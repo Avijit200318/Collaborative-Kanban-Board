@@ -6,6 +6,7 @@ import { Task, TaskPriority } from "../types/task";
 type TaskCardProps = {
   task: Task;
   isOverlay?: boolean;
+  onSelect?: (task: Task) => void;
   onEdit?: (task: Task) => void;
   onDelete?: (id: string) => void;
 };
@@ -93,6 +94,7 @@ function TaskCardBody({
 export default function TaskCard({
   task,
   isOverlay = false,
+  onSelect,
   onEdit,
   onDelete,
 }: TaskCardProps) {
@@ -142,7 +144,8 @@ export default function TaskCard({
       style={style}
       {...attributes}
       {...listeners}
-      className="group cursor-grab touch-none rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing"
+      onClick={() => onSelect?.(task)}
+      className="group cursor-pointer touch-none rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing"
     >
       <TaskCardBody
         task={task}

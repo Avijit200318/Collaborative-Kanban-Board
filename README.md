@@ -16,16 +16,18 @@ This Collaborative Kanban Board is a full-stack project management application b
 ## Features
 
 - **Kanban Board (4 Columns):** Fetches tasks from the backend API and displays them grouped in order across `Backlog`, `Todo`, `In Progress`, and `Done`.
-- **Task Management (CRUD):** Create new tasks in any column, edit existing task details (title, description, status, priority, assignee), and delete tasks.
+- **Task Management (CRUD):** Create new tasks in any column, edit existing task details, and delete tasks.
 - **Drag and Drop:** Move tasks smoothly between columns or reorder them within the same column using `@dnd-kit` with a solid `DragOverlay` card preview, persisting updated `status` and `position` values to MongoDB.
+- **Search and Filters:** Search tasks by title and filter simultaneously by priority (`low`, `medium`, `high`) and assignee.
+- **Task Details Drawer:** Click any task card to open a slide-over detail drawer to view and edit its title, description, priority, assignee, and status.
 - **Layered Backend Architecture:** Follows a clean `Route → Middleware → Controller → Service → Model` structure with `express-validator` request validation and centralized error handling.
 
 ## Project Status
 
 - [x] **1. Board** — Fetch board from API, group tasks by status, and support create, edit, and delete
 - [x] **2. Drag and drop** — Move tasks between columns, reorder within a column, and persist `status` and `position`
-- [ ] **3. Search and filters** — Upcoming
-- [ ] **4. Task details** — Upcoming
+- [x] **3. Search and filters** — Search by title and combine priority + assignee filters together
+- [x] **4. Task details** — Click any task card to open a detail drawer to view and edit description, priority, assignee, and status
 - [ ] **5. Optimistic updates** — Upcoming
 - [ ] **6. Real-time collaboration** — Upcoming
 - [ ] **7. URL state** — Upcoming

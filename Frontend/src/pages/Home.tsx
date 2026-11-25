@@ -14,8 +14,10 @@ import {
 import { arrayMove } from "@dnd-kit/sortable";
 import { AlertCircle, X } from "lucide-react";
 import Navbar from "../components/Navbar";
+import BoardFilters, { PriorityFilter } from "../components/BoardFilters";
 import KanbanColumn from "../components/KanbanColumn";
 import TaskCard from "../components/TaskCard";
+import TaskDetailDrawer from "../components/TaskDetailDrawer";
 import TaskFormModal from "../components/TaskFormModal";
 import { AppDispatch, RootState } from "../redux/store";
 import {
@@ -69,6 +71,11 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<ColumnStatus>("Backlog");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const [searchText, setSearchText] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [draftTasks, setDraftTasks] = useState<Task[] | null>(null);
@@ -85,9 +92,46 @@ export default function Home() {
 
   const displayedTasks = draftTasks ?? tasks;
 
+  const uniqueAssignees = useMemo(() => {
+    const set = new Set<string>();
+    for (const task of tasks) {
+      const trimmed = task.assignee.trim();
+      if (trimmed) set.add(trimmed);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tasks]);
+
+  const hasActiveFilters =
+    searchText.trim() !== "" ||
+    priorityFilter !== "all" ||
+    assigneeFilter !== "all";
+
+  const filteredTasks = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+
+    return displayedTasks.filter((task) => {
+      const matchesTitle =
+        !query || task.title.toLowerCase().includes(query);
+      const matchesPriority =
+        priorityFilter === "all" || task.priority === priorityFilter;
+      const matchesAssignee =
+        assigneeFilter === "all" ||
+        (assigneeFilter === "__unassigned__"
+          ? task.assignee.trim() === ""
+          : task.assignee.trim() === assigneeFilter);
+
+      return matchesTitle && matchesPriority && matchesAssignee;
+    });
+  }, [displayedTasks, searchText, priorityFilter, assigneeFilter]);
+
   const groupedTasks = useMemo(
-    () => groupAndSortTasks(displayedTasks),
-    [displayedTasks]
+    () => groupAndSortTasks(filteredTasks),
+    [filteredTasks]
+  );
+
+  const selectedTask = useMemo(
+    () => tasks.find((t) => t.id === selectedTaskId) ?? null,
+    [tasks, selectedTaskId]
   );
 
   const openCreateModal = (status: ColumnStatus = "Backlog") => {
@@ -118,8 +162,27 @@ export default function Home() {
     }
   };
 
-  const handleDeleteTask = (id: string) => {
-    dispatch(deleteTask(id));
+  const handleDrawerSave = async (
+    id: string,
+    updates: Partial<TaskPayload>
+  ) => {
+    const result = await dispatch(updateTask({ id, updates }));
+    if (updateTask.fulfilled.match(result)) {
+      setSelectedTaskId(null);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    const result = await dispatch(deleteTask(id));
+    if (deleteTask.fulfilled.match(result) && selectedTaskId === id) {
+      setSelectedTaskId(null);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearchText("");
+    setPriorityFilter("all");
+    setAssigneeFilter("all");
   };
 
   const findContainer = (
@@ -267,6 +330,19 @@ export default function Home() {
           </div>
         )}
 
+        <BoardFilters
+          searchText={searchText}
+          priorityFilter={priorityFilter}
+          assigneeFilter={assigneeFilter}
+          assignees={uniqueAssignees}
+          filteredCount={filteredTasks.length}
+          totalCount={tasks.length}
+          onSearchChange={setSearchText}
+          onPriorityChange={setPriorityFilter}
+          onAssigneeChange={setAssigneeFilter}
+          onClearAll={handleClearFilters}
+        />
+
         {loading && tasks.length === 0 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {COLUMN_ORDER.map((col) => (
@@ -291,7 +367,9 @@ export default function Home() {
                   key={status}
                   status={status}
                   tasks={groupedTasks[status]}
+                  isFiltered={hasActiveFilters}
                   onAddTask={openCreateModal}
+                  onSelectTask={(task) => setSelectedTaskId(task.id)}
                   onEditTask={openEditModal}
                   onDeleteTask={handleDeleteTask}
                 />
@@ -312,6 +390,14 @@ export default function Home() {
         saving={saving}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleFormSubmit}
+      />
+
+      <TaskDetailDrawer
+        task={selectedTask}
+        saving={saving}
+        onClose={() => setSelectedTaskId(null)}
+        onSave={handleDrawerSave}
+        onDelete={handleDeleteTask}
       />
     </div>
   );
