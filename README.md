@@ -1,6 +1,6 @@
 # Collaborative Kanban Board
 
-**Live Link:** [**click here**](https://github.com/Avijit200318/Collaborative-Kanban-Board/blob/main/Backend/readme.md)
+**Live Link:** [**click here**](https://collaborative-kanban-board-jjm1.onrender.com/)
 
 ## Website Preview
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8adfaeed-f652-47a4-9765-5d46d58128c6" />
