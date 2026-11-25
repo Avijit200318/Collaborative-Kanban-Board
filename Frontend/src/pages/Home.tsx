@@ -15,6 +15,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { AlertCircle, X } from "lucide-react";
 import Navbar from "../components/Navbar";
 import BoardFilters, { PriorityFilter } from "../components/BoardFilters";
+import EventConnect from "../components/EventConnect";
 import KanbanColumn from "../components/KanbanColumn";
 import TaskCard from "../components/TaskCard";
 import TaskDetailDrawer from "../components/TaskDetailDrawer";
@@ -65,9 +66,8 @@ const flattenGroups = (groups: Record<ColumnStatus, Task[]>): Task[] => {
 
 export default function Home() {
   const dispatch = useDispatch<AppDispatch>();
-  const { tasks, loading, saving, error, simulateError } = useSelector(
-    (state: RootState) => state.board
-  );
+  const { tasks, loading, saving, error, liveConnected, simulateError } =
+    useSelector((state: RootState) => state.board);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -295,16 +295,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <EventConnect activeDragId={activeTask?.id ?? null} />
+
       <Navbar
         totalTasks={tasks.length}
         loading={loading}
+        liveConnected={liveConnected}
         simulateError={simulateError}
         onToggleSimulateError={() => dispatch(toggleSimulateError())}
         onRefresh={() => dispatch(fetchBoard())}
         onCreateClick={() => openCreateModal("Backlog")}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
         {error && (
           <div className="mb-4 flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             <div className="flex items-center gap-2">
@@ -335,7 +338,7 @@ export default function Home() {
         />
 
         {loading && tasks.length === 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 lg:gap-4">
             {COLUMN_ORDER.map((col) => (
               <div
                 key={col}
@@ -352,7 +355,7 @@ export default function Home() {
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
           >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-4 lg:gap-4">
               {COLUMN_ORDER.map((status) => (
                 <KanbanColumn
                   key={status}

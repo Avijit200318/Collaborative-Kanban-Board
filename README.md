@@ -21,6 +21,7 @@ This Collaborative Kanban Board is a full-stack project management application b
 - **Search and Filters:** Search tasks by title and filter simultaneously by priority (`low`, `medium`, `high`) and assignee.
 - **Task Details Drawer:** Click any task card to open a slide-over detail drawer to view and edit its title, description, priority, assignee, and status.
 - **Optimistic Updates & Rollback:** Creating, editing, deleting, and dragging tasks update the UI immediately; if the backend request fails, Redux restores the pre-mutation snapshot and shows an error banner (with a **Simulate Error** toggle in the navbar for testing).
+- **Real-Time Collaboration (SSE):** Streams board changes (`task:created`, `task:updated`, `task:deleted`) over `GET /api/events` and applies remote updates without page reloads while preserving in-flight optimistic mutations, active drags, and unsaved edits in the task detail drawer.
 - **Layered Backend Architecture:** Follows a clean `Route → Middleware → Controller → Service → Model` structure with `express-validator` request validation and centralized error handling.
 
 ## Project Status
@@ -30,7 +31,7 @@ This Collaborative Kanban Board is a full-stack project management application b
 - [x] **3. Search and filters** — Search by title and combine priority + assignee filters together
 - [x] **4. Task details** — Click any task card to open a detail drawer to view and edit description, priority, assignee, and status
 - [x] **5. Optimistic updates** — Instant UI updates with snapshot rollback and error banner on API failures
-- [ ] **6. Real-time collaboration** — Upcoming
+- [x] **6. Real-time collaboration** — Server-Sent Events (`GET /api/events`) broadcast creates, updates, and deletes across connected tabs without overwriting local optimistic or drawer edits
 - [ ] **7. URL state** — Upcoming
 
 ## Technologies Used

@@ -1,11 +1,36 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { COLUMN_ORDER, ColumnStatus, Task, TaskPayload } from "../../types/task";
+
+export const CLIENT_ID =
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `client-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+
+export type BoardStreamEvent =
+  | {
+      type: "task:created";
+      sourceClientId: string | null;
+      task: Task;
+    }
+  | {
+      type: "task:updated";
+      sourceClientId: string | null;
+      task: Task;
+      tasks: Task[];
+    }
+  | {
+      type: "task:deleted";
+      sourceClientId: string | null;
+      id: string;
+      tasks: Task[];
+    };
 
 type BoardState = {
   tasks: Task[];
   loading: boolean;
   saving: boolean;
   error: string | null;
+  liveConnected: boolean;
   simulateError: boolean;
   snapshots: Record<string, Task[]>;
   pendingTaskIds: Record<string, string>;
@@ -16,6 +41,7 @@ const initialState: BoardState = {
   loading: false,
   saving: false,
   error: null,
+  liveConnected: false,
   simulateError: false,
   snapshots: {},
   pendingTaskIds: {},
@@ -32,6 +58,15 @@ const parseJsonOrThrow = async (res: Response) => {
 const cloneTasks = (tasks: Task[]): Task[] =>
   tasks.map((task) => ({ ...task }));
 
+const sortBoardTasks = (tasks: Task[]) => {
+  tasks.sort((a, b) => {
+    const colDiff =
+      COLUMN_ORDER.indexOf(a.status as ColumnStatus) -
+      COLUMN_ORDER.indexOf(b.status as ColumnStatus);
+    return colDiff !== 0 ? colDiff : a.position - b.position;
+  });
+};
+
 const reindexColumnTasks = (tasks: Task[], status: string) => {
   const columnTasks = tasks
     .filter((t) => t.status === status)
@@ -40,6 +75,24 @@ const reindexColumnTasks = (tasks: Task[], status: string) => {
   columnTasks.forEach((task, index) => {
     task.position = index;
   });
+};
+
+const mergeRemoteTasks = (
+  currentTasks: Task[],
+  remoteTasks: Task[],
+  lockedIds: Set<string>
+): Task[] => {
+  const preservedLocal = currentTasks.filter(
+    (t) => lockedIds.has(t.id) || t.id.startsWith("temp-")
+  );
+  const preservedIds = new Set(preservedLocal.map((t) => t.id));
+  const acceptedRemote = remoteTasks
+    .filter((t) => !preservedIds.has(t.id))
+    .map((t) => ({ ...t }));
+
+  const merged = [...acceptedRemote, ...preservedLocal];
+  sortBoardTasks(merged);
+  return merged;
 };
 
 const applyOptimisticMove = (
@@ -91,14 +144,7 @@ const applyOptimisticMove = (
   }
 
   movingTask.updatedAt = new Date().toISOString();
-
-  next.sort((a, b) => {
-    const colDiff =
-      COLUMN_ORDER.indexOf(a.status as ColumnStatus) -
-      COLUMN_ORDER.indexOf(b.status as ColumnStatus);
-    return colDiff !== 0 ? colDiff : a.position - b.position;
-  });
-
+  sortBoardTasks(next);
   return next;
 };
 
@@ -118,6 +164,7 @@ export const createTask = createAsyncThunk<
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-client-id": CLIENT_ID,
       ...(simulateError ? { "x-simulate-error": "true" } : {}),
     },
     body: JSON.stringify(payload),
@@ -136,6 +183,7 @@ export const updateTask = createAsyncThunk<
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      "x-client-id": CLIENT_ID,
       ...(simulateError ? { "x-simulate-error": "true" } : {}),
     },
     body: JSON.stringify(updates),
@@ -154,6 +202,7 @@ export const moveTask = createAsyncThunk<
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      "x-client-id": CLIENT_ID,
       ...(simulateError ? { "x-simulate-error": "true" } : {}),
     },
     body: JSON.stringify({ status, position }),
@@ -171,6 +220,7 @@ export const deleteTask = createAsyncThunk<
   const res = await fetch(`/api/tasks/delete/${id}`, {
     method: "DELETE",
     headers: {
+      "x-client-id": CLIENT_ID,
       ...(simulateError ? { "x-simulate-error": "true" } : {}),
     },
   });
@@ -187,6 +237,75 @@ const boardSlice = createSlice({
     },
     toggleSimulateError: (state) => {
       state.simulateError = !state.simulateError;
+    },
+    setLiveConnected: (state, action: PayloadAction<boolean>) => {
+      state.liveConnected = action.payload;
+    },
+    applyRemoteEvent: (
+      state,
+      action: PayloadAction<{
+        event: BoardStreamEvent;
+        activeDragId: string | null;
+      }>
+    ) => {
+      const { event, activeDragId } = action.payload;
+
+      if (event.sourceClientId && event.sourceClientId === CLIENT_ID) {
+        return;
+      }
+
+      const lockedIds = new Set<string>(Object.values(state.pendingTaskIds));
+      if (activeDragId) {
+        lockedIds.add(activeDragId);
+      }
+
+      if (event.type === "task:created") {
+        if (!state.tasks.some((t) => t.id === event.task.id)) {
+          state.tasks.push(event.task);
+          sortBoardTasks(state.tasks);
+        }
+        for (const reqId of Object.keys(state.snapshots)) {
+          if (!state.snapshots[reqId].some((t) => t.id === event.task.id)) {
+            state.snapshots[reqId].push({ ...event.task });
+            sortBoardTasks(state.snapshots[reqId]);
+          }
+        }
+        return;
+      }
+
+      if (event.type === "task:updated") {
+        state.tasks = mergeRemoteTasks(state.tasks, event.tasks, lockedIds);
+
+        for (const reqId of Object.keys(state.snapshots)) {
+          const reqLocked = new Set<string>();
+          const reqTaskId = state.pendingTaskIds[reqId];
+          if (reqTaskId) reqLocked.add(reqTaskId);
+          state.snapshots[reqId] = mergeRemoteTasks(
+            state.snapshots[reqId],
+            event.tasks,
+            reqLocked
+          );
+        }
+        return;
+      }
+
+      if (event.type === "task:deleted") {
+        if (!lockedIds.has(event.id)) {
+          state.tasks = mergeRemoteTasks(state.tasks, event.tasks, lockedIds);
+        }
+        for (const reqId of Object.keys(state.snapshots)) {
+          const reqLocked = new Set<string>();
+          const reqTaskId = state.pendingTaskIds[reqId];
+          if (reqTaskId) reqLocked.add(reqTaskId);
+          if (!reqLocked.has(event.id)) {
+            state.snapshots[reqId] = mergeRemoteTasks(
+              state.snapshots[reqId],
+              event.tasks,
+              reqLocked
+            );
+          }
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -238,7 +357,7 @@ const boardSlice = createSlice({
         const tempIndex = state.tasks.findIndex((t) => t.id === tempId);
         if (tempIndex !== -1) {
           state.tasks[tempIndex] = action.payload;
-        } else {
+        } else if (!state.tasks.some((t) => t.id === action.payload.id)) {
           state.tasks.push(action.payload);
         }
       })
@@ -380,5 +499,10 @@ const boardSlice = createSlice({
   },
 });
 
-export const { clearBoardError, toggleSimulateError } = boardSlice.actions;
+export const {
+  clearBoardError,
+  toggleSimulateError,
+  setLiveConnected,
+  applyRemoteEvent,
+} = boardSlice.actions;
 export default boardSlice.reducer;

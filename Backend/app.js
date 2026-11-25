@@ -5,6 +5,7 @@ import path from "path";
 import { connectToDB } from "./db/db.js";
 import boardRoutes from "./routes/board.route.js";
 import taskRoutes from "./routes/task.route.js";
+import eventRoutes from "./routes/event.route.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ const __dirname = path.resolve();
 
 app.use("/api/board", boardRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/events", eventRoutes);
 
 app.use(express.static(path.join(__dirname, "/Frontend/dist")));
 app.get(/^(?!\/api).*/, (_req, res) => {

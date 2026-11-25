@@ -178,6 +178,27 @@ This endpoint deletes a task by its ID, re-indexes the remaining task positions 
 
 ---
 
+# Real-Time Events Endpoint (SSE)
+
+## Endpoint: `/api/events`
+
+### Description
+This endpoint opens a Server-Sent Events (SSE) stream to push real-time board updates to connected clients whenever any user creates, updates, moves, or deletes a task. It sends an initial `connected` event, broadcasts `board-update` events (`task:created`, `task:updated`, `task:deleted`) with `sourceClientId` so originating tabs can deduplicate their own mutations, and sends periodic heartbeats to keep the connection alive.
+
+### Method
+`GET`
+
+### Response Stream (`text/event-stream`)
+```text
+event: connected
+data: {"status":"connected"}
+
+event: board-update
+data: {"type":"task:created","sourceClientId":"client-uuid","task":{...}}
+```
+
+---
+
 # Error Response Format
 
 All validation, not-found (`404`), and server (`500`) errors are handled by the global error middleware in `Backend/app.js` and return JSON in this format:

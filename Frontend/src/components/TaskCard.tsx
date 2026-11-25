@@ -30,18 +30,18 @@ function TaskCardBody({
 }) {
   return (
     <>
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <GripVertical className="h-4 w-4 shrink-0 text-slate-400" />
+      <div className="mb-2 flex items-start justify-between gap-1.5">
+        <div className="flex min-w-0 items-center gap-1 lg:gap-1.5">
+          <GripVertical className="h-3.5 w-3.5 shrink-0 text-slate-400 lg:h-4 lg:w-4" />
           <span
-            className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${PRIORITY_STYLES[task.priority]}`}
+            className={`rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide lg:px-2 lg:text-[11px] ${PRIORITY_STYLES[task.priority]}`}
           >
             {task.priority}
           </span>
         </div>
 
         {!isOverlay && (
-          <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+          <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity lg:gap-1 lg:opacity-0 lg:group-hover:opacity-100">
             <button
               type="button"
               onClick={(e) => {
@@ -49,9 +49,9 @@ function TaskCardBody({
                 onEdit?.(task);
               }}
               title="Edit task"
-              className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              className="cursor-pointer rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
             </button>
             <button
               type="button"
@@ -60,32 +60,34 @@ function TaskCardBody({
                 onDelete?.(task.id);
               }}
               title="Delete task"
-              className="rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+              className="cursor-pointer rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
             </button>
           </div>
         )}
       </div>
 
-      <h3 className="text-sm font-semibold leading-snug text-slate-900">
+      <h3 className="break-words text-xs font-semibold leading-snug text-slate-900 lg:text-sm">
         {task.title}
       </h3>
 
       {task.description && (
-        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-600">
+        <p className="mt-1.5 break-words text-[11px] leading-relaxed text-slate-600 lg:text-xs">
           {task.description}
         </p>
       )}
 
-      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-500">
-        <div className="flex items-center gap-1.5 truncate">
-          <User className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+      <div className="mt-2.5 flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2 text-[11px] text-slate-500 lg:mt-3 lg:pt-2.5 lg:text-xs">
+        <div className="flex min-w-0 items-center gap-1 truncate lg:gap-1.5">
+          <User className="h-3 w-3 shrink-0 text-slate-400 lg:h-3.5 lg:w-3.5" />
           <span className="truncate">
             {task.assignee ? task.assignee : "Unassigned"}
           </span>
         </div>
-        <span className="text-[11px] text-slate-400">#{task.position + 1}</span>
+        <span className="shrink-0 text-[10px] text-slate-400 lg:text-[11px]">
+          #{task.position + 1}
+        </span>
       </div>
     </>
   );
@@ -113,7 +115,7 @@ export default function TaskCard({
 
   if (isOverlay) {
     return (
-      <div className="cursor-grabbing rounded-xl border-2 border-blue-500 bg-white p-3.5 shadow-2xl ring-2 ring-blue-400/30">
+      <div className="cursor-grabbing rounded-xl border-2 border-blue-500 bg-white p-2.5 shadow-2xl ring-2 ring-blue-400/30 lg:p-3.5">
         <TaskCardBody task={task} isOverlay />
       </div>
     );
@@ -129,7 +131,7 @@ export default function TaskCard({
       <div
         ref={setNodeRef}
         style={style}
-        className="rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/50 p-3.5"
+        className="rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/50 p-2.5 lg:p-3.5"
       >
         <div className="invisible">
           <TaskCardBody task={task} />
@@ -145,7 +147,7 @@ export default function TaskCard({
       {...attributes}
       {...listeners}
       onClick={() => onSelect?.(task)}
-      className="group cursor-pointer touch-none rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing"
+      className="group cursor-pointer touch-none rounded-xl border border-slate-200 bg-white p-2.5 shadow-xs transition hover:border-slate-300 hover:shadow-sm active:cursor-grabbing lg:p-3.5"
     >
       <TaskCardBody
         task={task}
