@@ -1,0 +1,24 @@
+{
+  "name": "collaborative-kanban-board",
+  "version": "1.0.0",
+  "main": "Backend/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon Backend/server.js",
+    "start": "node Backend/server.js",
+    "dev:client": "npm run dev --prefix Frontend",
+    "build": "npm install && npm install --prefix Frontend && npm run build --prefix Frontend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Collaborative Kanban Board built with React + TypeScript, Node.js, Express, and MongoDB",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-validator": "^7.3.1",
+    "mongoose": "^8.19.4",
+    "nodemon": "^3.1.11"
+  }
+}
