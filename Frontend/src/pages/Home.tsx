@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import {
   DndContext,
   DragEndEvent,
@@ -74,9 +75,32 @@ export default function Home() {
   const [defaultStatus, setDefaultStatus] = useState<ColumnStatus>("Backlog");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const [searchText, setSearchText] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-  const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const searchText = searchParams.get("q") ?? "";
+  const rawPriority = searchParams.get("priority");
+  const priorityFilter: PriorityFilter =
+    rawPriority === "low" ||
+    rawPriority === "medium" ||
+    rawPriority === "high"
+      ? rawPriority
+      : "all";
+  const assigneeFilter = searchParams.get("assignee") || "all";
+
+  const updateFilterParam = (key: string, value: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (!value || value === "all") {
+          next.delete(key);
+        } else {
+          next.set(key, value);
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [draftTasks, setDraftTasks] = useState<Task[] | null>(null);
@@ -175,9 +199,16 @@ export default function Home() {
   };
 
   const handleClearFilters = () => {
-    setSearchText("");
-    setPriorityFilter("all");
-    setAssigneeFilter("all");
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("q");
+        next.delete("priority");
+        next.delete("assignee");
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   const findContainer = (
@@ -331,9 +362,9 @@ export default function Home() {
           assignees={uniqueAssignees}
           filteredCount={filteredTasks.length}
           totalCount={tasks.length}
-          onSearchChange={setSearchText}
-          onPriorityChange={setPriorityFilter}
-          onAssigneeChange={setAssigneeFilter}
+          onSearchChange={(value) => updateFilterParam("q", value)}
+          onPriorityChange={(value) => updateFilterParam("priority", value)}
+          onAssigneeChange={(value) => updateFilterParam("assignee", value)}
           onClearAll={handleClearFilters}
         />
 

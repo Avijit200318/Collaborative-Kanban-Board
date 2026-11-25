@@ -78,6 +78,11 @@ export default function BoardFilters({
             className="w-full cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-slate-900 focus:bg-white sm:w-auto sm:px-3 sm:text-sm"
           >
             <option value="all">All Assignees</option>
+            {assigneeFilter !== "all" &&
+              assigneeFilter !== "__unassigned__" &&
+              !assignees.includes(assigneeFilter) && (
+                <option value={assigneeFilter}>{assigneeFilter}</option>
+              )}
             {assignees.map((person) => (
               <option key={person} value={person}>
                 {person}
